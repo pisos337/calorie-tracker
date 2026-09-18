@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#4CAF7D">
+<title>Калории</title>
+<script>
+(function(){
+  try{
+    var t = localStorage.getItem('ct_theme_v1');
+    if(t==='light' || t==='dark'){ document.documentElement.setAttribute('data-theme', t); }
+  }catch(e){}
+})();
+</script>
+<style>
+  :root{
+    --bg:#FBF8F3;
+    --card:#FFFFFF;
+    --text:#2E2A24;
+    --muted:#928879;
+    --border:#EEE7DA;
+    --accent:#43B07E;
+    --accent-2:#2E9367;
+    --accent-soft:#E7F5EE;
+    --danger:#E2635F;
+    --danger-soft:#FBEAE9;
+    --warn:#E8A33D;
+    --warn-soft:#FBF0DE;
+    --shadow:0 2px 12px rgba(46,42,36,0.07);
+    --radius:16px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#1E1B17;
+      --card:#28241F;
+      --text:#F4EFE7;
+      --muted:#A99E8D;
+      --border:#3A342C;
+      --accent:#4ADE97;
+      --accent-2:#39C081;
+      --accent-soft:#20352A;
+      --danger:#F1837E;
+      --danger-soft:#3A2220;
+      --warn:#F0B24E;
+      --warn-soft:#3A2E19;
+      --shadow:0 2px 16px rgba(0,0,0,0.45);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#1E1B17;
+    --card:#28241F;
+    --text:#F4EFE7;
+    --muted:#A99E8D;
+    --border:#3A342C;
+    --accent:#4ADE97;
+    --accent-2:#39C081;
+    --accent-soft:#20352A;
+    --danger:#F1837E;
+    --danger-soft:#3A2220;
+    --warn:#F0B24E;
+    --warn-soft:#3A2E19;
+    --shadow:0 2px 16px rgba(0,0,0,0.45);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system, BlinkMacSystemFont, "SF Pro Text", Segoe UI, Roboto, sans-serif;
+    padding-bottom:calc(78px + env(safe-area-inset-bottom));
+    min-height:100vh;
+    transition:background .2s ease, color .2s ease;
+  }
+  header.top{
+    position:sticky; top:0; z-index:10;
+    background:var(--bg);
+    padding:calc(14px + env(safe-area-inset-top)) 16px 10px;
+    display:flex; align-items:center; justify-content:space-between;
+    border-bottom:1px solid var(--border);
+  }
+  header.top h1{font-size:19px; margin:0; font-weight:700;}
+  .header-actions{display:flex; gap:8px;}
+  .container{padding:14px 14px 8px; max-width:560px; margin:0 auto;}
+  .card{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:14px 16px; margin-bottom:12px;
+  }
+  .row{display:flex; align-items:center; justify-content:space-between; gap:10px;}
+  .muted{color:var(--muted); font-size:13px;}
+  .big{font-size:28px; font-weight:800; letter-spacing:-0.5px;}
+  button{
+    font-family:inherit; border:none; cursor:pointer;
+    border-radius:12px; font-weight:600; font-size:15px;
+    padding:10px 14px; transition:opacity .15s, transform .1s;
+  }
+  button:active{transform:scale(0.97);}
+  .btn-accent{background:var(--accent); color:#0B2417;}
+  .btn-soft{background:var(--accent-soft); color:var(--accent-2);}
+  .btn-danger{background:var(--danger-soft); color:var(--danger);}
+  .btn-ghost{background:transparent; color:var(--text); border:1px solid var(--border);}
+  .icon-btn{
+    width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+    background:var(--accent-soft); color:var(--accent-2); font-size:17px; font-weight:700; padding:0;
+  }
+  input, select{
+    font-family:inherit; font-size:15px; padding:10px 12px;
+    border:1px solid var(--border); border-radius:10px;
+    background:var(--bg); color:var(--text); width:100%;
+  }
+  input:focus, select:focus{outline:2px solid var(--accent); outline-offset:1px;}
+  label{font-size:12.5px; color:var(--muted); display:block; margin-bottom:4px; margin-top:10px; font-weight:600;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  .grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;}
+  .macro-bar{height:8px; border-radius:6px; background:var(--border); overflow:hidden; margin-top:6px;}
+  .macro-fill{height:100%; border-radius:6px; transition:width .3s ease;}
+  .entry{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 0; border-bottom:1px solid var(--border);
+  }
+  .entry:last-child{border-bottom:none;}
+  .entry-name{font-weight:600; font-size:15px;}
+  .entry-sub{font-size:12.5px; color:var(--muted); margin-top:2px;}
+  nav.tabs{
+    position:fixed; bottom:0; left:0; right:0; z-index:20;
+    background:var(--card); border-top:1px solid var(--border);
+    padding:8px 10px calc(8px + env(safe-area-inset-bottom));
+    display:flex; justify-content:space-around;
+  }
+  nav.tabs button{
+    background:transparent; flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;
+    color:var(--muted); font-size:11px; font-weight:600; padding:6px 4px;
+  }
+  nav.tabs button.active{color:var(--accent-2);}
+  nav.tabs .ic{font-size:20px;}
+  .page{display:none;}
+  .page.active{display:block;}
+  .cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:5px; margin-top:8px;}
+  .cal-day{
+    aspect-ratio:1; border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    font-size:12.5px; background:var(--bg); border:1px solid var(--border); cursor:pointer; position:relative;
+  }
+  .cal-day.other{opacity:0.3;}
+  .cal-day.today{border-color:var(--accent); border-width:2px;}
+  .cal-day.selected{background:var(--accent); color:#0B2417; border-color:var(--accent);}
+  .cal-day .dot{width:5px; height:5px; border-radius:50%; margin-top:2px;}
+  .cal-weekday{text-align:center; font-size:11px; color:var(--muted); font-weight:700;}
+  .modal-bg{
+    position:fixed; inset:0; background:rgba(20,17,12,0.45); z-index:50;
+    display:none; align-items:flex-end; justify-content:center;
+  }
+  .modal-bg.open{display:flex;}
+  .modal{
+    background:var(--card); width:100%; max-width:560px; border-radius:20px 20px 0 0;
+    padding:18px 18px calc(18px + env(safe-area-inset-bottom)); max-height:88vh; overflow-y:auto;
+  }
+  .modal h3{margin:0 0 4px;}
+  .modal-handle{width:36px; height:4px; background:var(--border); border-radius:3px; margin:0 auto 12px;}
+  .search-results{max-height:220px; overflow-y:auto; margin-top:8px;}
+  .search-item{
+    padding:10px; border-radius:10px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; gap:8px;
+  }
+  .search-item:active{background:var(--accent-soft);}
+  .search-item .si-name{font-weight:600; font-size:14.5px;}
+  .search-item .si-sub{font-size:11.5px; color:var(--muted);}
+  .empty{text-align:center; color:var(--muted); padding:26px 10px; font-size:14px;}
+  .fab{
+    position:fixed; right:18px; bottom:calc(92px + env(safe-area-inset-bottom)); z-index:15;
+    width:56px; height:56px; border-radius:50%; background:var(--accent); color:#0B2417;
+    font-size:28px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 16px rgba(0,0,0,0.22);
+  }
+  .segment{display:flex; background:var(--bg); border-radius:10px; padding:3px; border:1px solid var(--border);}
+  .segment button{flex:1; background:transparent; color:var(--muted); padding:8px; border-radius:8px; font-size:13px;}
+  .segment button.active{background:var(--accent); color:#0B2417;}
+  .chips{display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; margin-top:10px;}
+  .chip{
+    flex:0 0 auto; padding:7px 13px; border-radius:20px; font-size:12.5px; font-weight:600;
+    background:var(--bg); border:1px solid var(--border); color:var(--muted); cursor:pointer; white-space:nowrap;
+  }
+  .chip.active{background:var(--accent); color:#0B2417; border-color:var(--accent);}
+  .toast{
+    position:fixed; bottom:calc(90px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%);
+    background:var(--text); color:var(--bg); padding:10px 18px; border-radius:12px; font-size:13.5px;
+    z-index:60; opacity:0; transition:opacity .25s; pointer-events:none;
+  }
+  .toast.show{opacity:0.95;}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <h1 id="pageTitle">Сегодня</h1>
+  <div class="header-actions">
+    <button class="icon-btn" id="themeBtn" onclick="cycleTheme()">🌓</button>
+    <button class="icon-btn" onclick="openGoalModal()">🎯</button>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- DIARY PAGE -->
+  <div class="page active" id="page-diary">
+    <div class="card">
+      <div class="row">
+        <button class="icon-btn" onclick="shiftDay(-1)">‹</button>
+        <div style="text-align:center;">
+          <div style="font-weight:700; font-size:15px;" id="diaryDateLabel">—</div>
+          <div class="muted" id="diaryDateSub">—</div>
+        </div>
+        <button class="icon-btn" onclick="shiftDay(1)">›</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <div>
+          <div class="muted">Съедено сегодня</div>
+          <div class="big" id="totalKcal">0</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="muted">Цель</div>
+          <div style="font-weight:700; font-size:18px;" id="goalKcalLabel">2000 ккал</div>
+        </div>
+      </div>
+      <div class="macro-bar"><div class="macro-fill" id="kcalProgress" style="background:var(--accent); width:0%;"></div></div>
+      <div class="grid3" style="margin-top:14px;">
+        <div>
+          <div class="muted" style="font-size:11.5px;">Белки</div>
+          <div style="font-weight:700;" id="totalP">0 г</div>
+        </div>
+        <div>
+          <div class="muted" style="font-size:11.5px;">Жиры</div>
+          <div style="font-weight:700;" id="totalF">0 г</div>
+        </div>
+        <div>
+          <div class="muted" style="font-size:11.5px;">Углеводы</div>
+          <div style="font-weight:700;" id="totalC">0 г</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="entriesCard">
+      <div class="row" style="margin-bottom:4px;">
+        <div style="font-weight:700;">Приёмы пищи</div>
+      </div>
+      <div id="entriesList"></div>
+    </div>
+  </div>
+
+  <!-- CALENDAR PAGE -->
+  <div class="page" id="page-calendar">
+    <div class="card">
+      <div class="row">
+        <button class="icon-btn" onclick="shiftMonth(-1)">‹</button>
+        <div style="font-weight:700; font-size:16px;" id="monthLabel">—</div>
+        <button class="icon-btn" onclick="shiftMonth(1)">›</button>
+      </div>
+      <div class="cal-grid" id="weekdaysRow"></div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="row" style="margin-top:12px; gap:14px;">
+        <div class="row" style="gap:6px;"><div class="dot" style="width:8px;height:8px;border-radius:50%;background:var(--accent);"></div><span class="muted" style="font-size:12px;">в пределах цели</span></div>
+        <div class="row" style="gap:6px;"><div class="dot" style="width:8px;height:8px;border-radius:50%;background:var(--warn);"></div><span class="muted" style="font-size:12px;">превышена</span></div>
+      </div>
+    </div>
+    <div class="card" id="selectedDaySummary"></div>
+  </div>
+
+  <!-- DATABASE PAGE -->
+  <div class="page" id="page-db">
+    <div class="card">
+      <input type="text" id="dbSearch" placeholder="Поиск по базе продуктов…" oninput="renderDb()">
+      <div class="chips" id="dbChips"></div>
+    </div>
+    <div class="card" id="dbListCard">
+      <div id="dbList"></div>
+    </div>
+  </div>
+
+</div>
+
+<button class="fab" onclick="openAddEntry()" id="fabAdd">+</button>
+
+<nav class="tabs">
+  <button class="tab-btn active" data-page="diary" onclick="switchPage('diary')"><span class="ic">📔</span>Дневник</button>
+  <button class="tab-btn" data-page="calendar" onclick="switchPage('calendar')"><span class="ic">📅</span>Календарь</button>
+  <button class="tab-btn" data-page="db" onclick="switchPage('db')"><span class="ic">🗂️</span>База</button>
+</nav>
+
+<!-- ADD ENTRY MODAL -->
+<div class="modal-bg" id="entryModalBg">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>Добавить приём пищи</h3>
+    <div class="segment" style="margin-top:10px;">
+      <button id="segFromDb" class="active" onclick="setEntryMode('db')">Из базы</button>
+      <button id="segCustom" onclick="setEntryMode('custom')">Свои калории</button>
+    </div>
+
+    <div id="fromDbBlock">
+      <label>Продукт</label>
+      <input type="text" id="entrySearch" placeholder="Начните вводить название…" oninput="renderEntrySearch()">
+      <div class="chips" id="entryChips"></div>
+      <div class="search-results" id="entrySearchResults"></div>
+      <div id="chosenFoodBlock" style="display:none; margin-top:10px;">
+        <div class="card" style="margin:0; background:var(--accent-soft); border:none;">
+          <div class="row"><b id="chosenFoodName"></b><span class="muted" id="chosenFoodKcal100"></span></div>
+        </div>
+        <label id="entryQtyLabel">Количество (грамм)</label>
+        <input type="number" id="entryGrams" placeholder="например 150" inputmode="decimal">
+      </div>
+    </div>
+
+    <div id="customBlock" style="display:none;">
+      <label>Название</label>
+      <input type="text" id="customName" placeholder="например, Обед в кафе">
+      <div class="grid2">
+        <div><label>Калории</label><input type="number" id="customKcal" inputmode="decimal"></div>
+        <div><label>Белки, г</label><input type="number" id="customP" inputmode="decimal" value="0"></div>
+      </div>
+      <div class="grid2">
+        <div><label>Жиры, г</label><input type="number" id="customF" inputmode="decimal" value="0"></div>
+        <div><label>Углеводы, г</label><input type="number" id="customC" inputmode="decimal" value="0"></div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:16px; gap:10px;">
+      <button class="btn-ghost" style="flex:1;" onclick="closeEntryModal()">Отмена</button>
+      <button class="btn-accent" style="flex:1;" onclick="saveEntry()">Добавить</button>
+    </div>
+  </div>
+</div>
+
+<!-- FOOD EDIT MODAL -->
+<div class="modal-bg" id="foodModalBg">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3 id="foodModalTitle">Новый продукт</h3>
+    <label>Название</label>
+    <input type="text" id="foodName" placeholder="например, Гречка варёная">
+    <label>Категория</label>
+    <select id="foodCat">
+      <option value="common">Обычные продукты</option>
+      <option value="fastfood">Фастфуд</option>
+      <option value="meat">Мясо и рыба</option>
+      <option value="carbs">Крупы и гарниры</option>
+      <option value="dairy">Молочное</option>
+      <option value="fruit">Фрукты и овощи</option>
+      <option value="drinks">Напитки</option>
+      <option value="sweets">Сладкое</option>
+    </select>
+    <label>Как считать количество</label>
+    <div class="segment">
+      <button type="button" id="unitG" class="active" onclick="setFoodUnit('g')">На 100 г</button>
+      <button type="button" id="unitPortion" onclick="setFoodUnit('portion')">За порцию</button>
+    </div>
+    <div id="portionLabelBlock" style="display:none;">
+      <label>Что за порция</label>
+      <input type="text" id="foodPortionLabel" placeholder="например, 1 шт (219 г)">
+    </div>
+    <p class="muted" style="margin-top:10px;" id="foodValuesHint">Значения указывай на 100 г продукта</p>
+    <div class="grid2">
+      <div><label id="foodKcalLabel">Калории /100г</label><input type="number" id="foodKcal" inputmode="decimal"></div>
+      <div><label>Белки, г</label><input type="number" id="foodP" inputmode="decimal" value="0"></div>
+    </div>
+    <div class="grid2">
+      <div><label>Жиры, г</label><input type="number" id="foodF" inputmode="decimal" value="0"></div>
+      <div><label>Углеводы, г</label><input type="number" id="foodC" inputmode="decimal" value="0"></div>
+    </div>
+    <div class="row" style="margin-top:16px; gap:10px;">
+      <button class="btn-danger" id="deleteFoodBtn" style="display:none;" onclick="deleteFood()">Удалить</button>
+      <button class="btn-ghost" style="flex:1;" onclick="closeFoodModal()">Отмена</button>
+      <button class="btn-accent" style="flex:1;" onclick="saveFood()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- GOAL MODAL -->
+<div class="modal-bg" id="goalModalBg">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>Дневная цель</h3>
+    <label>Целевые калории в день</label>
+    <input type="number" id="goalInput" inputmode="decimal">
+    <div class="row" style="margin-top:16px; gap:10px;">
+      <button class="btn-ghost" style="flex:1;" onclick="closeGoalModal()">Отмена</button>
+      <button class="btn-accent" style="flex:1;" onclick="saveGoal()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- THEME ---------- */
+const THEME_KEY = 'ct_theme_v1';
+function getThemeMode(){
+  try{ return localStorage.getItem(THEME_KEY) || 'auto'; }catch(e){ return 'auto'; }
+}
+function applyTheme(mode){
+  if(mode==='light' || mode==='dark'){
+    document.documentElement.setAttribute('data-theme', mode);
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+  }
+  const icons = {auto:'🌓', light:'☀️', dark:'🌙'};
+  document.getElementById('themeBtn').textContent = icons[mode] || '🌓';
+}
+function cycleTheme(){
+  const order = ['auto','light','dark'];
+  const cur = getThemeMode();
+  const next = order[(order.indexOf(cur)+1) % order.length];
+  try{ localStorage.setItem(THEME_KEY, next); }catch(e){}
+  applyTheme(next);
+  const names = {auto:'Тема: как на телефоне', light:'Тема: светлая', dark:'Тема: тёмная'};
+  showToast(names[next]);
+}
+
+/* ---------- STORAGE ---------- */
+const LS_FOODS = 'ct_foods_v2';
+const LS_ENTRIES = 'ct_entries_v1';
+const LS_GOAL = 'ct_goal_v1';
+
+const CATS = {
+  common:'Обычные продукты', fastfood:'Фастфуд', meat:'Мясо и рыба', carbs:'Крупы и гарниры',
+  dairy:'Молочное', fruit:'Фрукты и овощи', drinks:'Напитки', sweets:'Сладкое'
+};
+
+// unit 'g' -> значения на 100г, пользователь вводит граммы
+// unit 'portion' -> значения за одну порцию/штуку, пользователь вводит количество порций
+const DEFAULT_FOODS = [
+  // Обычные продукты
+  {id:'f1', name:'Куриная грудка варёная', cat:'meat', unit:'g', kcal:165, p:31, f:3.6, c:0},
+  {id:'f2', name:'Рис варёный', cat:'carbs', unit:'g', kcal:130, p:2.7, f:0.3, c:28},
+  {id:'f3', name:'Гречка варёная', cat:'carbs', unit:'g', kcal:110, p:4, f:1.1, c:21},
+  {id:'f4', name:'Яйцо куриное', cat:'common', unit:'portion', portionLabel:'1 шт (55 г)', kcal:78, p:6.5, f:5.5, c:0.5},
+  {id:'f5', name:'Творог 5%', cat:'dairy', unit:'g', kcal:121, p:17, f:5, c:3},
+  {id:'f6', name:'Банан', cat:'fruit', unit:'portion', portionLabel:'1 шт (120 г)', kcal:105, p:1.3, f:0.4, c:27},
+  {id:'f7', name:'Овсянка на воде', cat:'carbs', unit:'g', kcal:88, p:3, f:1.7, c:15},
+  {id:'f8', name:'Хлеб цельнозерновой', cat:'carbs', unit:'g', kcal:250, p:9, f:3.5, c:45},
+  {id:'f9', name:'Лосось запечённый', cat:'meat', unit:'g', kcal:208, p:20, f:13, c:0},
+  {id:'f10', name:'Йогурт натуральный', cat:'dairy', unit:'g', kcal:66, p:3.5, f:3.2, c:4.7},
+  {id:'f11', name:'Картофель варёный', cat:'carbs', unit:'g', kcal:82, p:2, f:0.1, c:17},
+  {id:'f12', name:'Авокадо', cat:'fruit', unit:'g', kcal:160, p:2, f:14.7, c:8.5},
+  {id:'f13', name:'Сыр твёрдый', cat:'dairy', unit:'g', kcal:350, p:25, f:27, c:1.3},
+  {id:'f14', name:'Оливковое масло', cat:'common', unit:'g', kcal:884, p:0, f:100, c:0},
+  {id:'f15', name:'Яблоко', cat:'fruit', unit:'portion', portionLabel:'1 шт (180 г)', kcal:94, p:0.5, f:0.4, c:25},
+  {id:'f16', name:'Говядина варёная', cat:'meat', unit:'g', kcal:254, p:26, f:16, c:0},
+  {id:'f17', name:'Свинина жареная', cat:'meat', unit:'g', kcal:320, p:20, f:27, c:0},
+  {id:'f18', name:'Индейка филе варёное', cat:'meat', unit:'g', kcal:130, p:29, f:1, c:0},
+  {id:'f19', name:'Тунец консервированный', cat:'meat', unit:'g', kcal:116, p:26, f:1, c:0},
+  {id:'f20', name:'Креветки варёные', cat:'meat', unit:'g', kcal:99, p:24, f:0.3, c:0.2},
+  {id:'f21', name:'Макароны варёные', cat:'carbs', unit:'g', kcal:131, p:5, f:1, c:25},
+  {id:'f22', name:'Булгур варёный', cat:'carbs', unit:'g', kcal:83, p:3, f:0.2, c:18},
+  {id:'f23', name:'Кускус варёный', cat:'carbs', unit:'g', kcal:112, p:3.8, f:0.2, c:23},
+  {id:'f24', name:'Чечевица варёная', cat:'carbs', unit:'g', kcal:116, p:9, f:0.4, c:20},
+  {id:'f25', name:'Молоко 2.5%', cat:'dairy', unit:'g', kcal:52, p:2.8, f:2.5, c:4.7},
+  {id:'f26', name:'Кефир 1%', cat:'dairy', unit:'g', kcal:40, p:3, f:1, c:4},
+  {id:'f27', name:'Сметана 15%', cat:'dairy', unit:'g', kcal:158, p:2.6, f:15, c:3},
+  {id:'f28', name:'Сыр моцарелла', cat:'dairy', unit:'g', kcal:280, p:18, f:22, c:2},
+  {id:'f29', name:'Помидор', cat:'fruit', unit:'g', kcal:20, p:0.9, f:0.2, c:3.9},
+  {id:'f30', name:'Огурец', cat:'fruit', unit:'g', kcal:15, p:0.7, f:0.1, c:2.5},
+  {id:'f31', name:'Апельсин', cat:'fruit', unit:'portion', portionLabel:'1 шт (150 г)', kcal:70, p:1.4, f:0.2, c:18},
+  {id:'f32', name:'Виноград', cat:'fruit', unit:'g', kcal:69, p:0.6, f:0.2, c:18},
+  {id:'f33', name:'Морковь', cat:'fruit', unit:'g', kcal:41, p:0.9, f:0.2, c:10},
+  // Фастфуд
+  {id:'ff1', name:'Биг Мак', cat:'fastfood', unit:'portion', portionLabel:'1 шт (219 г)', kcal:503, p:25, f:26, c:41},
+  {id:'ff2', name:'Чизбургер', cat:'fastfood', unit:'portion', portionLabel:'1 шт (117 г)', kcal:300, p:15, f:12, c:32},
+  {id:'ff3', name:'Картофель фри (средний)', cat:'fastfood', unit:'portion', portionLabel:'1 порция средняя', kcal:340, p:4, f:16, c:44},
+  {id:'ff4', name:'Наггетсы 6 шт', cat:'fastfood', unit:'portion', portionLabel:'6 шт', kcal:259, p:14, f:15, c:15},
+  {id:'ff5', name:'МакФлурри Орео', cat:'fastfood', unit:'portion', portionLabel:'1 порция', kcal:340, p:8, f:11, c:53},
+  {id:'ff6', name:'Чикен Роял', cat:'fastfood', unit:'portion', portionLabel:'1 шт', kcal:502, p:23, f:24, c:48},
+  {id:'ff7', name:'Пицца Пепперони (Додо), кусок', cat:'fastfood', unit:'portion', portionLabel:'1 кусок (30см, 1/8)', kcal:220, p:10, f:9, c:24},
+  {id:'ff8', name:'Пицца Маргарита (Додо), кусок', cat:'fastfood', unit:'portion', portionLabel:'1 кусок (30см, 1/8)', kcal:190, p:8, f:6, c:26},
+  {id:'ff9', name:'Пицца 4 сыра (Додо), кусок', cat:'fastfood', unit:'portion', portionLabel:'1 кусок (30см, 1/8)', kcal:230, p:11, f:11, c:22},
+  {id:'ff10', name:'Воппер', cat:'fastfood', unit:'portion', portionLabel:'1 шт (около 290 г)', kcal:480, p:27, f:27, c:33},
+  {id:'ff11', name:'Твистер (KFC)', cat:'fastfood', unit:'portion', portionLabel:'1 шт', kcal:480, p:20, f:24, c:45},
+  {id:'ff12', name:'Стрипсы KFC 3 шт', cat:'fastfood', unit:'portion', portionLabel:'3 шт', kcal:280, p:24, f:15, c:12},
+  {id:'ff13', name:'Шаурма классическая', cat:'fastfood', unit:'portion', portionLabel:'1 шт (~300 г)', kcal:550, p:25, f:25, c:55},
+  {id:'ff14', name:'Хот-дог', cat:'fastfood', unit:'portion', portionLabel:'1 шт', kcal:290, p:10, f:15, c:30},
+  {id:'ff15', name:'Ролл Калифорния', cat:'fastfood', unit:'portion', portionLabel:'8 шт (сет)', kcal:350, p:12, f:10, c:55},
+  // Напитки
+  {id:'d1', name:'Кола', cat:'drinks', unit:'portion', portionLabel:'1 бутылка 0.5 л', kcal:210, p:0, f:0, c:53},
+  {id:'d2', name:'Сок апельсиновый', cat:'drinks', unit:'portion', portionLabel:'1 стакан 200 мл', kcal:90, p:1, f:0, c:21},
+  {id:'d3', name:'Пиво светлое', cat:'drinks', unit:'portion', portionLabel:'1 бутылка 0.5 л', kcal:215, p:2, f:0, c:17},
+  {id:'d4', name:'Кофе латте', cat:'drinks', unit:'portion', portionLabel:'1 порция 300 мл', kcal:150, p:8, f:8, c:12},
+  {id:'d5', name:'Чай без сахара', cat:'drinks', unit:'portion', portionLabel:'1 чашка', kcal:2, p:0, f:0, c:0.5},
+  // Сладкое
+  {id:'s1', name:'Шоколад молочный', cat:'sweets', unit:'g', kcal:534, p:7.6, f:29.7, c:59},
+  {id:'s2', name:'Мороженое пломбир', cat:'sweets', unit:'g', kcal:227, p:3.5, f:15, c:20},
+  {id:'s3', name:'Круассан', cat:'sweets', unit:'portion', portionLabel:'1 шт (70 г)', kcal:280, p:6, f:16, c:30},
+  {id:'s4', name:'Печенье овсяное', cat:'sweets', unit:'portion', portionLabel:'1 шт (~20 г)', kcal:90, p:1.3, f:3.5, c:13},
+];
+
+function loadFoods(){
+  try{
+    const raw = localStorage.getItem(LS_FOODS);
+    if(!raw){ localStorage.setItem(LS_FOODS, JSON.stringify(DEFAULT_FOODS)); return JSON.parse(JSON.stringify(DEFAULT_FOODS)); }
+    return JSON.parse(raw);
+  }catch(e){ return JSON.parse(JSON.stringify(DEFAULT_FOODS)); }
+}
+function saveFoods(f){ try{ localStorage.setItem(LS_FOODS, JSON.stringify(f)); }catch(e){} }
+
+function loadEntries(){
+  try{ const raw = localStorage.getItem(LS_ENTRIES); return raw ? JSON.parse(raw) : {}; }catch(e){ return {}; }
+}
+function saveEntries(e){ try{ localStorage.setItem(LS_ENTRIES, JSON.stringify(e)); }catch(err){} }
+
+function loadGoal(){
+  try{ const raw = localStorage.getItem(LS_GOAL); return raw ? parseFloat(raw) : 2000; }catch(e){ return 2000; }
+}
+function saveGoalVal(v){ try{ localStorage.setItem(LS_GOAL, String(v)); }catch(e){} }
+
+let foods = loadFoods();
+let entries = loadEntries();
+let goal = loadGoal();
+
+/* ---------- STATE ---------- */
+let currentDate = new Date();
+let calMonthCursor = new Date();
+let selectedCalDate = new Date();
+let entryMode = 'db';
+let chosenFood = null;
+let editingFoodId = null;
+let dbActiveCat = 'all';
+let entryActiveCat = 'all';
+let currentFoodUnit = 'g';
+
+/* ---------- HELPERS ---------- */
+function dateKey(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+function fmtDateLabel(d){ return ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'][d.getDay()]; }
+function fmtDateSub(d){ return d.toLocaleDateString('ru-RU', {day:'numeric', month:'long', year:'numeric'}); }
+function isSameDay(a,b){ return dateKey(a)===dateKey(b); }
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 1600);
+}
+function round1(n){ return Math.round(n*10)/10; }
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------- PAGE SWITCH ---------- */
+function switchPage(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.page===name));
+  const titles = {diary:'Дневник', calendar:'Календарь', db:'База продуктов'};
+  document.getElementById('pageTitle').textContent = titles[name];
+  document.getElementById('fabAdd').style.display = name==='db' ? 'none' : 'flex';
+  if(name==='calendar') renderCalendar();
+  if(name==='db') renderDb();
+  if(name==='diary') renderDiary();
+}
+
+/* ---------- DIARY ---------- */
+function shiftDay(delta){ currentDate.setDate(currentDate.getDate()+delta); renderDiary(); }
+function renderDiary(){
+  document.getElementById('diaryDateLabel').textContent = fmtDateLabel(currentDate);
+  document.getElementById('diaryDateSub').textContent = fmtDateSub(currentDate);
+  const key = dateKey(currentDate);
+  const dayEntries = entries[key] || [];
+  let totalKcal=0, totalP=0, totalF=0, totalC=0;
+  dayEntries.forEach(e=>{ totalKcal+=e.kcal; totalP+=e.p; totalF+=e.f; totalC+=e.c; });
+  document.getElementById('totalKcal').textContent = Math.round(totalKcal);
+  document.getElementById('goalKcalLabel').textContent = Math.round(goal) + ' ккал';
+  document.getElementById('totalP').textContent = round1(totalP)+' г';
+  document.getElementById('totalF').textContent = round1(totalF)+' г';
+  document.getElementById('totalC').textContent = round1(totalC)+' г';
+  const pct = goal>0 ? Math.min(100, (totalKcal/goal)*100) : 0;
+  const bar = document.getElementById('kcalProgress');
+  bar.style.width = pct+'%';
+  bar.style.background = totalKcal>goal ? 'var(--warn)' : 'var(--accent)';
+
+  const list = document.getElementById('entriesList');
+  if(dayEntries.length===0){
+    list.innerHTML = '<div class="empty">Пока пусто. Нажми «+», чтобы добавить приём пищи 🍽️</div>';
+    return;
+  }
+  list.innerHTML = dayEntries.map((e,idx)=>`
+    <div class="entry">
+      <div>
+        <div class="entry-name">${escapeHtml(e.name)}</div>
+        <div class="entry-sub">${e.qtyLabel ? e.qtyLabel+' · ' : ''}Б ${round1(e.p)} · Ж ${round1(e.f)} · У ${round1(e.c)}</div>
+      </div>
+      <div class="row" style="gap:8px;">
+        <div style="font-weight:700;">${Math.round(e.kcal)}</div>
+        <button class="icon-btn btn-danger" style="width:28px;height:28px;font-size:14px;" onclick="deleteEntry(${idx})">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+function deleteEntry(idx){
+  const key = dateKey(currentDate);
+  entries[key].splice(idx,1);
+  if(entries[key].length===0) delete entries[key];
+  saveEntries(entries);
+  renderDiary();
+}
+
+/* ---------- ADD ENTRY MODAL ---------- */
+function openAddEntry(){
+  chosenFood = null;
+  entryActiveCat = 'all';
+  document.getElementById('entrySearch').value='';
+  document.getElementById('entrySearchResults').innerHTML='';
+  document.getElementById('chosenFoodBlock').style.display='none';
+  document.getElementById('entryGrams').value='';
+  document.getElementById('customName').value='';
+  document.getElementById('customKcal').value='';
+  document.getElementById('customP').value='0';
+  document.getElementById('customF').value='0';
+  document.getElementById('customC').value='0';
+  setEntryMode('db');
+  renderEntryChips();
+  document.getElementById('entryModalBg').classList.add('open');
+}
+function closeEntryModal(){ document.getElementById('entryModalBg').classList.remove('open'); }
+function setEntryMode(mode){
+  entryMode = mode;
+  document.getElementById('segFromDb').classList.toggle('active', mode==='db');
+  document.getElementById('segCustom').classList.toggle('active', mode==='custom');
+  document.getElementById('fromDbBlock').style.display = mode==='db' ? 'block':'none';
+  document.getElementById('customBlock').style.display = mode==='custom' ? 'block':'none';
+}
+function renderEntryChips(){
+  const cats = ['all', ...Object.keys(CATS)];
+  document.getElementById('entryChips').innerHTML = cats.map(c=>`
+    <div class="chip ${entryActiveCat===c?'active':''}" onclick="setEntryCat('${c}')">${c==='all'?'Все':CATS[c]}</div>
+  `).join('');
+}
+function setEntryCat(c){ entryActiveCat = c; renderEntryChips(); renderEntrySearch(); }
+function renderEntrySearch(){
+  const q = document.getElementById('entrySearch').value.trim().toLowerCase();
+  const results = document.getElementById('entrySearchResults');
+  let pool = foods;
+  if(entryActiveCat!=='all') pool = pool.filter(f=>f.cat===entryActiveCat);
+  if(q) pool = pool.filter(f=>f.name.toLowerCase().includes(q));
+  if(!q && entryActiveCat==='all'){ results.innerHTML=''; return; }
+  const matches = pool.slice(0,30);
+  if(matches.length===0){ results.innerHTML='<div class="empty" style="padding:14px;">Ничего не найдено. Можно добавить в базе продуктов.</div>'; return; }
+  results.innerHTML = matches.map(f=>`
+    <div class="search-item" onclick="pickFood('${f.id}')">
+      <div>
+        <div class="si-name">${escapeHtml(f.name)}</div>
+        <div class="si-sub">${f.unit==='portion' ? (f.portionLabel||'1 порция') : 'на 100 г'}</div>
+      </div>
+      <span class="muted">${f.kcal} ккал</span>
+    </div>
+  `).join('');
+}
+function pickFood(id){
+  chosenFood = foods.find(f=>f.id===id);
+  if(!chosenFood) return;
+  document.getElementById('chosenFoodName').textContent = chosenFood.name;
+  document.getElementById('chosenFoodKcal100').textContent = chosenFood.unit==='portion'
+    ? chosenFood.kcal+' ккал / '+(chosenFood.portionLabel||'порция')
+    : chosenFood.kcal+' ккал/100г';
+  document.getElementById('chosenFoodBlock').style.display='block';
+  document.getElementById('entrySearchResults').innerHTML='';
+  document.getElementById('entrySearch').value = chosenFood.name;
+  const gramsInput = document.getElementById('entryGrams');
+  if(chosenFood.unit==='portion'){
+    document.getElementById('entryQtyLabel').textContent = 'Количество порций ('+(chosenFood.portionLabel||'1 шт')+')';
+    gramsInput.placeholder = 'например 1 или 0.5';
+    gramsInput.value = '1';
+  } else {
+    document.getElementById('entryQtyLabel').textContent = 'Количество (грамм)';
+    gramsInput.placeholder = 'например 150';
+    gramsInput.value = '';
+  }
+}
+function saveEntry(){
+  const key = dateKey(currentDate);
+  if(!entries[key]) entries[key]=[];
+  if(entryMode==='db'){
+    if(!chosenFood){ showToast('Выбери продукт из списка'); return; }
+    const qty = parseFloat(document.getElementById('entryGrams').value);
+    if(!qty || qty<=0){ showToast('Укажи количество'); return; }
+    let factor, qtyLabel;
+    if(chosenFood.unit==='portion'){
+      factor = qty;
+      qtyLabel = qty+' × '+(chosenFood.portionLabel||'порция');
+    } else {
+      factor = qty/100;
+      qtyLabel = qty+' г';
+    }
+    entries[key].push({
+      name: chosenFood.name, qtyLabel,
+      kcal: chosenFood.kcal*factor, p: chosenFood.p*factor, f: chosenFood.f*factor, c: chosenFood.c*factor
+    });
+  } else {
+    const name = document.getElementById('customName').value.trim();
+    const kcal = parseFloat(document.getElementById('customKcal').value);
+    if(!name){ showToast('Введи название'); return; }
+    if(isNaN(kcal)){ showToast('Введи калорийность'); return; }
+    entries[key].push({
+      name, qtyLabel:null, kcal,
+      p: parseFloat(document.getElementById('customP').value)||0,
+      f: parseFloat(document.getElementById('customF').value)||0,
+      c: parseFloat(document.getElementById('customC').value)||0
+    });
+  }
+  saveEntries(entries);
+  closeEntryModal();
+  renderDiary();
+  showToast('Добавлено ✓');
+}
+
+/* ---------- DATABASE ---------- */
+function renderDbChips(){
+  const cats = ['all', ...Object.keys(CATS)];
+  document.getElementById('dbChips').innerHTML = cats.map(c=>`
+    <div class="chip ${dbActiveCat===c?'active':''}" onclick="setDbCat('${c}')">${c==='all'?'Все':CATS[c]}</div>
+  `).join('');
+}
+function setDbCat(c){ dbActiveCat = c; renderDbChips(); renderDb(); }
+function renderDb(){
+  renderDbChips();
+  const q = document.getElementById('dbSearch').value.trim().toLowerCase();
+  const list = document.getElementById('dbList');
+  let filtered = foods;
+  if(dbActiveCat!=='all') filtered = filtered.filter(f=>f.cat===dbActiveCat);
+  filtered = filtered.filter(f=>f.name.toLowerCase().includes(q)).sort((a,b)=>a.name.localeCompare(b.name,'ru'));
+  const addBtnHtml = `<button class="btn-accent" style="width:100%; margin-bottom:10px;" onclick="openFoodModal()">+ Добавить продукт</button>`;
+  if(filtered.length===0){
+    list.innerHTML = addBtnHtml + '<div class="empty">Ничего не найдено</div>';
+    return;
+  }
+  list.innerHTML = addBtnHtml + filtered.map(f=>`
+    <div class="entry" style="cursor:pointer;" onclick="openFoodModal('${f.id}')">
+      <div>
+        <div class="entry-name">${escapeHtml(f.name)}</div>
+        <div class="entry-sub">Б ${f.p} · Ж ${f.f} · У ${f.c} (${f.unit==='portion' ? (f.portionLabel||'порция') : 'на 100г'})</div>
+      </div>
+      <div style="font-weight:700;">${f.kcal}</div>
+    </div>
+  `).join('');
+}
+function setFoodUnit(u){
+  currentFoodUnit = u;
+  document.getElementById('unitG').classList.toggle('active', u==='g');
+  document.getElementById('unitPortion').classList.toggle('active', u==='portion');
+  document.getElementById('portionLabelBlock').style.display = u==='portion' ? 'block':'none';
+  document.getElementById('foodValuesHint').textContent = u==='portion' ? 'Значения указывай за одну порцию/штуку' : 'Значения указывай на 100 г продукта';
+  document.getElementById('foodKcalLabel').textContent = u==='portion' ? 'Калории /порция' : 'Калории /100г';
+}
+function openFoodModal(id){
+  editingFoodId = id || null;
+  const isEdit = !!id;
+  document.getElementById('foodModalTitle').textContent = isEdit ? 'Редактировать продукт' : 'Новый продукт';
+  document.getElementById('deleteFoodBtn').style.display = isEdit ? 'block' : 'none';
+  if(isEdit){
+    const f = foods.find(x=>x.id===id);
+    document.getElementById('foodName').value = f.name;
+    document.getElementById('foodCat').value = f.cat || 'common';
+    document.getElementById('foodKcal').value = f.kcal;
+    document.getElementById('foodP').value = f.p;
+    document.getElementById('foodF').value = f.f;
+    document.getElementById('foodC').value = f.c;
+    document.getElementById('foodPortionLabel').value = f.portionLabel || '';
+    setFoodUnit(f.unit || 'g');
+  } else {
+    document.getElementById('foodName').value='';
+    document.getElementById('foodCat').value='common';
+    document.getElementById('foodKcal').value='';
+    document.getElementById('foodP').value='0';
+    document.getElementById('foodF').value='0';
+    document.getElementById('foodC').value='0';
+    document.getElementById('foodPortionLabel').value='';
+    setFoodUnit('g');
+  }
+  document.getElementById('foodModalBg').classList.add('open');
+}
+function closeFoodModal(){ document.getElementById('foodModalBg').classList.remove('open'); }
+function saveFood(){
+  const name = document.getElementById('foodName').value.trim();
+  const kcal = parseFloat(document.getElementById('foodKcal').value);
+  if(!name){ showToast('Введи название продукта'); return; }
+  if(isNaN(kcal)){ showToast('Введи калорийность'); return; }
+  const p = parseFloat(document.getElementById('foodP').value)||0;
+  const f = parseFloat(document.getElementById('foodF').value)||0;
+  const c = parseFloat(document.getElementById('foodC').value)||0;
+  const cat = document.getElementById('foodCat').value;
+  const unit = currentFoodUnit;
+  const portionLabel = document.getElementById('foodPortionLabel').value.trim();
+  if(editingFoodId){
+    const food = foods.find(x=>x.id===editingFoodId);
+    Object.assign(food, {name, kcal, p, f, c, cat, unit, portionLabel: unit==='portion' ? portionLabel : undefined});
+  } else {
+    foods.push({id:'f'+Date.now(), name, kcal, p, f, c, cat, unit, portionLabel: unit==='portion' ? portionLabel : undefined});
+  }
+  saveFoods(foods);
+  closeFoodModal();
+  renderDb();
+  showToast('Сохранено ✓');
+}
+function deleteFood(){
+  if(!editingFoodId) return;
+  foods = foods.filter(x=>x.id!==editingFoodId);
+  saveFoods(foods);
+  closeFoodModal();
+  renderDb();
+  showToast('Удалено');
+}
+
+/* ---------- CALENDAR ---------- */
+function shiftMonth(delta){ calMonthCursor.setMonth(calMonthCursor.getMonth()+delta); renderCalendar(); }
+function dayTotal(d){ const key = dateKey(d); const list = entries[key] || []; return list.reduce((s,e)=>s+e.kcal,0); }
+function renderCalendar(){
+  const y = calMonthCursor.getFullYear(), m = calMonthCursor.getMonth();
+  document.getElementById('monthLabel').textContent = calMonthCursor.toLocaleDateString('ru-RU',{month:'long', year:'numeric'});
+  const weekdays = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+  document.getElementById('weekdaysRow').innerHTML = weekdays.map(w=>`<div class="cal-weekday">${w}</div>`).join('');
+  const firstOfMonth = new Date(y,m,1);
+  let startOffset = firstOfMonth.getDay()-1; if(startOffset<0) startOffset=6;
+  const daysInMonth = new Date(y,m+1,0).getDate();
+  const daysInPrevMonth = new Date(y,m,0).getDate();
+  const cells = [];
+  for(let i=startOffset;i>0;i--) cells.push({d:daysInPrevMonth-i+1, other:true, date:new Date(y,m-1,daysInPrevMonth-i+1)});
+  for(let d=1; d<=daysInMonth; d++) cells.push({d, other:false, date:new Date(y,m,d)});
+  while(cells.length%7!==0){
+    const nextD = cells.length - (startOffset+daysInMonth) + 1;
+    cells.push({d:nextD, other:true, date:new Date(y,m+1,nextD)});
+  }
+  const today = new Date();
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = cells.map(cell=>{
+    const total = dayTotal(cell.date);
+    let dotColor = 'transparent';
+    if(total>0) dotColor = total>goal ? 'var(--warn)' : 'var(--accent)';
+    const classes = ['cal-day'];
+    if(cell.other) classes.push('other');
+    if(isSameDay(cell.date, today)) classes.push('today');
+    if(isSameDay(cell.date, selectedCalDate)) classes.push('selected');
+    return `<div class="${classes.join(' ')}" onclick="pickCalDay('${dateKey(cell.date)}')">
+      <div>${cell.d}</div>
+      <div class="dot" style="background:${dotColor};"></div>
+    </div>`;
+  }).join('');
+  renderSelectedDaySummary();
+}
+function pickCalDay(key){
+  const [y,m,d] = key.split('-').map(Number);
+  selectedCalDate = new Date(y, m-1, d);
+  renderCalendar();
+}
+function renderSelectedDaySummary(){
+  const box = document.getElementById('selectedDaySummary');
+  const key = dateKey(selectedCalDate);
+  const list = entries[key] || [];
+  const total = list.reduce((s,e)=>s+e.kcal,0);
+  const header = `<div class="row" style="margin-bottom:8px;">
+      <b>${fmtDateSub(selectedCalDate)}</b>
+      <button class="btn-soft" onclick="goToDiaryDate('${key}')">Открыть день</button>
+    </div>
+    <div class="row"><span class="muted">Итого</span><span style="font-weight:700;">${Math.round(total)} ккал</span></div>`;
+  if(list.length===0){ box.innerHTML = header + '<div class="empty">Записей нет</div>'; return; }
+  box.innerHTML = header + list.map(e=>`
+    <div class="entry"><div class="entry-name">${escapeHtml(e.name)}</div><div>${Math.round(e.kcal)}</div></div>
+  `).join('');
+}
+function goToDiaryDate(key){
+  const [y,m,d] = key.split('-').map(Number);
+  currentDate = new Date(y, m-1, d);
+  switchPage('diary');
+}
+
+/* ---------- GOAL MODAL ---------- */
+function openGoalModal(){ document.getElementById('goalInput').value = goal; document.getElementById('goalModalBg').classList.add('open'); }
+function closeGoalModal(){ document.getElementById('goalModalBg').classList.remove('open'); }
+function saveGoal(){
+  const v = parseFloat(document.getElementById('goalInput').value);
+  if(!v || v<=0){ showToast('Укажи корректное число'); return; }
+  goal = v; saveGoalVal(goal); closeGoalModal(); renderDiary();
+  showToast('Цель обновлена ✓');
+}
+
+/* ---------- INIT ---------- */
+applyTheme(getThemeMode());
+renderDiary();
+</script>
+</body>
+</html>
