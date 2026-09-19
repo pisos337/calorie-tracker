@@ -9,6 +9,7 @@
 <meta name="theme-color" content="#2E9E6E">
 <link rel="apple-touch-icon" href="icon.png">
 <title>Калории</title>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
 (function(){
   try{
@@ -80,7 +81,7 @@ background:linear-gradient(155deg,var(--accent),var(--accent-2));color:#08241A;d
 .modal-bg{position:fixed;inset:0;background:rgba(10,14,11,.5);z-index:60;display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(6px)}.modal-bg.open{display:flex}
 .modal{background:var(--card);width:100%;max-width:620px;border-radius:28px 28px 0 0;padding:18px 20px calc(20px + env(safe-area-inset-bottom));
 max-height:91vh;overflow-y:auto;animation:sheetIn .28s cubic-bezier(.22,.8,.25,1);box-shadow:var(--shadow-float)}@keyframes sheetIn{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
-.modal h3{margin:0 0 6px;font-size:21px;font-weight:800;letter-spacing:-.3px}.modal-handle{width:40px;height:4.5px;background:var(--border);border-radius:4px;margin:0 auto 14px}
+.modal h3{margin:0 0 6px;font-size:21px;font-weight:800;letter-spacing:-.3px}.modal-handle{width:44px;height:5px;background:var(--border);border-radius:4px;margin:-10px auto 12px;padding:14px 26px;background-clip:content-box;box-sizing:content-box}
 .search-results{max-height:230px;overflow-y:auto;margin-top:7px}.search-item{padding:11px;border-radius:12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .search-item:active{background:var(--accent-soft)}.si-name{font-weight:700;font-size:14px}.si-sub{font-size:11.5px;color:var(--muted)}
 .toast{position:fixed;bottom:calc(96px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(8px);
@@ -99,7 +100,7 @@ background:var(--text);color:var(--bg);padding:11px 18px;border-radius:14px;font
 .calc-result{background:linear-gradient(150deg,var(--accent-soft),var(--card) 70%);border:1px solid var(--border);border-radius:22px;padding:20px;text-align:center}
 .calc-kcal{font-size:40px;font-weight:900;letter-spacing:-1px}.macro-pill{padding:11px;border-radius:15px;background:var(--bg);text-align:center}.macro-pill b{display:block;font-size:18px}
 .progress-head{display:flex;justify-content:space-between;align-items:flex-end}.delta-up{color:var(--danger)}.delta-down{color:var(--accent-2)}
-canvas{display:block;width:100%;height:230px}.range-row{display:flex;gap:6px}.range-row button{flex:1;padding:9px;font-size:12.5px}.range-row button.active{background:var(--accent);color:#08241A}
+canvas{display:block;width:100%;height:230px}.range-row{display:flex;gap:6px}.range-row button{flex:1;padding:9px;font-size:12.5px;background:var(--bg);color:var(--muted);border:1px solid var(--border)}.range-row button.active{background:var(--accent);color:#08241A;border-color:var(--accent)}
 .measure-list{display:grid;grid-template-columns:1fr 1fr;gap:8px}.measure-item{background:var(--bg);border:1px solid var(--border);padding:13px;border-radius:15px}
 .small-btn{padding:7px 10px;font-size:12px;border-radius:11px}.hint{font-size:12px;color:var(--muted);line-height:1.5}
 @media(max-width:380px){nav.tabs button svg{width:20px;height:20px}.container{padding-left:12px;padding-right:12px}.card{padding:15px}.ring-wrap{width:160px;height:160px}.ring-kcal{font-size:30px}header.top h1{font-size:25px}}
@@ -243,7 +244,10 @@ canvas{display:block;width:100%;height:230px}.range-row{display:flex;gap:6px}.ra
   <div class="segment" style="margin-top:10px"><button id="segFromDb" class="active" onclick="setEntryMode('db')">Из базы</button><button id="segCustom" onclick="setEntryMode('custom')">Свои БЖУ</button></div>
   <div id="fromDbBlock">
     <label>Продукт</label><input type="text" id="entrySearch" placeholder="Начните вводить название…" oninput="renderEntrySearch">
+    <button type="button" class="btn-soft" style="width:100%;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px" onclick="openScannerForEntry()"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8a2 2 0 012-2h1l1.2-1.8A2 2 0 0110 3.4h4a2 2 0 011.8.9L17 6h1a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V8z"/><circle cx="12" cy="13" r="3.5"/></svg>Сканировать штрихкод</button>
     <div class="chips" id="entryChips"></div><div class="search-results" id="entrySearchResults"></div>
+    <div class="muted" style="margin-top:8px;font-size:11.5px">🌐 Открытая база данных</div>
+    <div class="search-results" id="onlineSearchResults"></div>
     <div id="chosenFoodBlock" style="display:none;margin-top:10px">
       <div class="subtle"><div class="row"><b id="chosenFoodName"></b><span class="muted" id="chosenFoodKcal100"></span></div></div>
       <div class="segment" style="margin-top:10px"><button id="qtyModePortion" class="active" onclick="setQtyMode('portion')">Порции</button><button id="qtyModeGrams" onclick="setQtyMode('grams')">Граммы</button></div>
@@ -296,6 +300,15 @@ canvas{display:block;width:100%;height:230px}.range-row{display:flex;gap:6px}.ra
   <div class="row" style="margin-top:17px;gap:9px"><button class="btn-ghost" style="flex:1" onclick="closeMeasureModal()">Отмена</button><button class="btn-accent" style="flex:1" onclick="saveMeasures()">Сохранить</button></div>
 </div></div>
 
+<!-- SCANNER -->
+<div class="modal-bg" id="scannerModalBg"><div class="modal">
+  <div class="modal-handle"></div><h3>Сканировать штрихкод</h3>
+  <div class="hint" style="margin-bottom:10px">Наведи камеру на штрихкод продукта (EAN/UPC)</div>
+  <div id="scannerViewport" style="width:100%;border-radius:16px;overflow:hidden;background:#000;min-height:260px"></div>
+  <div id="scannerStatus" class="muted" style="text-align:center;margin-top:10px">Включаю камеру…</div>
+  <div class="row" style="margin-top:17px;gap:9px"><button class="btn-ghost" style="flex:1" onclick="closeScanner()">Отмена</button></div>
+</div></div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -311,6 +324,7 @@ const THEME_ICONS={
 };
 
 /* THEME */
+const WORKER_BASE='https://food-proxy.richardtea2007.workers.dev'.replace(/\/+$/,''); // адрес твоего Cloudflare Worker (без слэша на конце)
 const THEME_KEY='ct_theme_v1';
 function getThemeMode(){try{return localStorage.getItem(THEME_KEY)||'auto'}catch(e){return'auto'}}
 function applyTheme(mode){if(mode==='light'||mode==='dark')document.documentElement.setAttribute('data-theme',mode);else document.documentElement.removeAttribute('data-theme');
@@ -411,6 +425,27 @@ function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(window._toast);window._toast=setTimeout(()=>t.classList.remove('show'),1700)}
 function openModal(id){document.getElementById(id).classList.add('open')}
 function closeModal(id){document.getElementById(id).classList.remove('open')}
+const MODAL_CLOSERS={entryModalBg:()=>closeEntryModal(),foodModalBg:()=>closeFoodModal(),goalModalBg:()=>closeGoalModal(),weightModalBg:()=>closeWeightModal(),measureModalBg:()=>closeMeasureModal(),scannerModalBg:()=>closeScanner()};
+function closeModalById(id){(MODAL_CLOSERS[id]||(()=>closeModal(id)))()}
+function initModalGestures(){
+ document.querySelectorAll('.modal-bg').forEach(bg=>{
+  const id=bg.id;
+  bg.addEventListener('click',e=>{if(e.target===bg)closeModalById(id)});
+  const modal=bg.querySelector('.modal'),handle=bg.querySelector('.modal-handle');
+  if(!modal||!handle)return;
+  handle.style.touchAction='none';handle.style.cursor='grab';
+  let startY=0,dy=0,dragging=false;
+  handle.addEventListener('pointerdown',e=>{dragging=true;startY=e.clientY;modal.style.transition='none';try{handle.setPointerCapture(e.pointerId)}catch(err){}});
+  handle.addEventListener('pointermove',e=>{if(!dragging)return;dy=Math.max(0,e.clientY-startY);modal.style.transform='translateY('+dy+'px)'});
+  const end=()=>{
+   if(!dragging)return;dragging=false;modal.style.transition='transform .25s cubic-bezier(.2,.8,.2,1)';
+   if(dy>80){modal.style.transform='translateY(120%)';setTimeout(()=>{closeModalById(id);modal.style.transform=''},180)}
+   else modal.style.transform='';
+   dy=0;
+  };
+  handle.addEventListener('pointerup',end);handle.addEventListener('pointercancel',end);
+ });
+}
 
 /* PAGE SWITCH */
 function greeting(){const h=new Date().getHours();if(h<5)return'Доброй ночи';if(h<12)return'Доброе утро';if(h<18)return'Добрый день';return'Добрый вечер'}
@@ -465,9 +500,10 @@ function renderEntryChips(){document.getElementById('entryChips').innerHTML=['al
 function setEntryCat(c){entryActiveCat=c;renderEntryChips();renderEntrySearch()}
 function renderEntrySearch(){
  const q=document.getElementById('entrySearch').value.trim().toLowerCase();let pool=foods;if(entryActiveCat!=='all')pool=pool.filter(f=>f.cat===entryActiveCat);if(q)pool=pool.filter(f=>f.name.toLowerCase().includes(q));
- const el=document.getElementById('entrySearchResults');if(!q&&entryActiveCat==='all'){el.innerHTML='';return}
- const arr=pool.slice(0,30);if(!arr.length){el.innerHTML='<div class="empty">Ничего не найдено</div>';return}
- el.innerHTML=arr.map(f=>`<div class="search-item" onclick="pickFood('${f.id}')"><div><div class="si-name">${escapeHtml(f.name)}</div><div class="si-sub">${f.unit==='portion'?(f.portionLabel||'1 порция'):'на 100 г'}${f.portionGrams?' · '+f.portionGrams+' г':''}</div></div><b class="muted">${Math.round(f.kcal)} ккал</b></div>`).join('')
+ const el=document.getElementById('entrySearchResults');if(!q&&entryActiveCat==='all'){el.innerHTML='';document.getElementById('onlineSearchResults').innerHTML='';return}
+ const arr=pool.slice(0,30);if(!arr.length){el.innerHTML='<div class="empty">Ничего не найдено</div>';}else{
+ el.innerHTML=arr.map(f=>`<div class="search-item" onclick="pickFood('${f.id}')"><div><div class="si-name">${escapeHtml(f.name)}</div><div class="si-sub">${f.unit==='portion'?(f.portionLabel||'1 порция'):'на 100 г'}${f.portionGrams?' · '+f.portionGrams+' г':''}</div></div><b class="muted">${Math.round(f.kcal)} ккал</b></div>`).join('')}
+ triggerOnlineSearch(q);
 }
 document.getElementById('entrySearch').addEventListener('input',renderEntrySearch);
 function pickFood(id){
@@ -501,7 +537,7 @@ function renderDbChips(){document.getElementById('dbChips').innerHTML=['all',...
 function setDbCat(c){dbActiveCat=c;renderDbChips();renderDb()}
 function renderDb(){
  renderDbChips();const q=document.getElementById('dbSearch').value.trim().toLowerCase();let arr=foods;if(dbActiveCat!=='all')arr=arr.filter(f=>f.cat===dbActiveCat);arr=arr.filter(f=>f.name.toLowerCase().includes(q)).sort((a,b)=>a.name.localeCompare(b.name,'ru'));
- const el=document.getElementById('dbList');let out=`<button class="btn-accent" style="width:100%;margin-bottom:8px" onclick="openFoodModal()">+ Добавить продукт</button>`;
+ const el=document.getElementById('dbList');let out=`<div class="row" style="gap:8px;margin-bottom:8px"><button class="btn-accent" style="flex:1" onclick="openFoodModal()">+ Добавить продукт</button><button class="btn-soft" style="flex:0 0 auto;padding:11px 16px;display:flex;align-items:center;justify-content:center;gap:6px" onclick="openScannerForNewFood()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8a2 2 0 012-2h1l1.2-1.8A2 2 0 0110 3.4h4a2 2 0 011.8.9L17 6h1a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V8z"/><circle cx="12" cy="13" r="3.5"/></svg>Штрихкод</button></div>`;
  if(!arr.length){el.innerHTML=out+'<div class="empty">Ничего не найдено</div>';return}
  el.innerHTML=out+arr.map(f=>`<div class="entry" style="cursor:pointer" onclick="openFoodModal('${f.id}')"><div><div class="entry-name">${escapeHtml(f.name)}</div><div class="entry-sub">Б ${f.p} · Ж ${f.f} · У ${f.c} · ${f.unit==='portion'?(f.portionLabel||'порция'):'100 г'}${f.portionGrams?' · '+f.portionGrams+' г':''}</div></div><b>${Math.round(f.kcal)}</b></div>`).join('')
 }
@@ -521,6 +557,92 @@ function saveFood(){
  saveJSON(LS_FOODS,foods);closeFoodModal();renderDb();showToast('Продукт сохранён ✓')
 }
 function deleteFood(){if(!editingFoodId)return;foods=foods.filter(f=>f.id!==editingFoodId);saveJSON(LS_FOODS,foods);closeFoodModal();renderDb();showToast('Удалено')}
+
+/* ONLINE SEARCH (Open Food Facts, by name) */
+let onlineSearchTimer=null;
+function triggerOnlineSearch(q){
+ clearTimeout(onlineSearchTimer);
+ const box=document.getElementById('onlineSearchResults');
+ if(!q||q.length<3){box.innerHTML='';return}
+ box.innerHTML='<div class="muted" style="padding:8px">Ищу в открытой базе…</div>';
+ onlineSearchTimer=setTimeout(()=>searchOpenFoodFacts(q),550);
+}
+function searchOpenFoodFacts(q){
+ const box=document.getElementById('onlineSearchResults');
+ const url=WORKER_BASE+'/search?q='+encodeURIComponent(q);
+ fetch(url).then(res=>{
+   if(!res.ok)throw new Error('HTTP '+res.status);
+   return res.json();
+ }).then(data=>{
+   const rawHits=Array.isArray(data.hits)?data.hits:(data.hits&&Array.isArray(data.hits.hits)?data.hits.hits:[]);
+   const products=rawHits.filter(p=>(p.product_name_ru||p.product_name)&&p.nutriments&&p.nutriments['energy-kcal_100g']!=null);
+   if(!products.length){box.innerHTML='<div class="empty" style="padding:10px">В открытой базе ничего не нашлось</div>';return}
+   box.innerHTML=products.map(p=>{
+     const n=p.nutriments||{},kcal=Math.round(n['energy-kcal_100g']||0),brandStr=Array.isArray(p.brands)?p.brands.join(', '):(p.brands||''),name=(p.product_name_ru||p.product_name)+(brandStr?' · '+brandStr:'');
+     const pr=round1(n['proteins_100g']||0),fa=round1(n['fat_100g']||0),ca=round1(n['carbohydrates_100g']||0);
+     return `<div class="search-item" onclick='pickOnlineFood(${JSON.stringify(p.code||"")}, ${JSON.stringify(name)}, ${kcal}, ${pr}, ${fa}, ${ca})'>
+       <div><div class="si-name">${escapeHtml(name)}</div><div class="si-sub">🌐 Open Food Facts · на 100 г</div></div>
+       <b class="muted">${kcal} ккал</b>
+     </div>`;
+   }).join('');
+ }).catch(err=>{
+   console.error('OFF search failed:', err);
+   box.innerHTML='<div class="empty" style="padding:10px">Backend недоступен ('+err.message+'). Проверь адрес WORKER_BASE в коде</div>';
+ });
+}
+function pickOnlineFood(code,name,kcal,p,f,c){
+ let existing=code&&foods.find(x=>x.barcode===code);
+ if(!existing){existing={id:'off'+Date.now(),name,cat:'common',unit:'g',kcal,p,f,c,barcode:code||undefined};foods.push(existing);saveJSON(LS_FOODS,foods)}
+ pickFood(existing.id);document.getElementById('onlineSearchResults').innerHTML='';document.getElementById('entrySearchResults').innerHTML='';
+ showToast('Добавлено из открытой базы ✓');
+}
+
+/* BARCODE SCANNER (Open Food Facts) */
+let scannerInstance=null, scannerContext=null;
+function openScannerForNewFood(){scannerContext='newFood';startScanner()}
+function openScannerForEntry(){scannerContext='entry';startScanner()}
+function startScanner(){
+ if(typeof Html5Qrcode==='undefined'){showToast('Сканер не загрузился — нужен интернет и HTTPS-хостинг');return}
+ document.getElementById('scannerStatus').textContent='Включаю камеру…';openModal('scannerModalBg');
+ scannerInstance=new Html5Qrcode('scannerViewport');
+ const config={fps:10,qrbox:{width:270,height:150},formatsToSupport:[
+   Html5QrcodeSupportedFormats.EAN_13,Html5QrcodeSupportedFormats.EAN_8,
+   Html5QrcodeSupportedFormats.UPC_A,Html5QrcodeSupportedFormats.UPC_E,
+   Html5QrcodeSupportedFormats.CODE_128,Html5QrcodeSupportedFormats.QR_CODE]};
+ scannerInstance.start({facingMode:'environment'},config,onScanSuccess,()=>{}).then(()=>{
+   document.getElementById('scannerStatus').textContent='Наведи камеру на штрихкод…'
+ }).catch(()=>{
+   document.getElementById('scannerStatus').textContent='Нет доступа к камере. Разреши доступ в настройках Safari для этого сайта и перезагрузи страницу.'
+ });
+}
+function stopScanner(){if(scannerInstance){scannerInstance.stop().then(()=>scannerInstance.clear()).catch(()=>{});scannerInstance=null}}
+function closeScanner(){stopScanner();closeModal('scannerModalBg')}
+function onScanSuccess(decodedText){
+ document.getElementById('scannerStatus').textContent='Штрихкод '+decodedText+' — ищу продукт…';
+ stopScanner();lookupBarcode(decodedText);
+}
+function lookupBarcode(code){
+ fetch(WORKER_BASE+'/barcode?code='+encodeURIComponent(code))
+  .then(r=>r.json())
+  .then(data=>{
+    closeModal('scannerModalBg');
+    if(!data||data.status!==1||!data.product){showToast('Товар со штрихкодом '+code+' не найден в базе');if(scannerContext==='newFood')openFoodModal();return}
+    const p=data.product,n=p.nutriments||{};
+    const name=p.product_name_ru||p.product_name||p.generic_name_ru||p.generic_name||('Товар '+code);
+    const kcal=Math.round(n['energy-kcal_100g']||n['energy-kcal']||0);
+    const protein=round1(n['proteins_100g']||0),fat=round1(n['fat_100g']||0),carbs=round1(n['carbohydrates_100g']||0);
+    if(scannerContext==='newFood'){
+      openFoodModal();document.getElementById('foodName').value=name;document.getElementById('foodKcal').value=kcal;
+      document.getElementById('foodP').value=protein;document.getElementById('foodF').value=fat;document.getElementById('foodC').value=carbs;
+      setFoodUnit('g');showToast('Данные подтянуты — проверь и сохрани ✓');
+    }else{
+      let existing=foods.find(f=>f.barcode===code);
+      if(!existing){existing={id:'bc'+Date.now(),name,cat:'common',unit:'g',kcal,p:protein,f:fat,c:carbs,barcode:code};foods.push(existing);saveJSON(LS_FOODS,foods)}
+      pickFood(existing.id);document.getElementById('entrySearchResults').innerHTML='';showToast('Найдено: '+name);
+    }
+  })
+  .catch(()=>{closeModal('scannerModalBg');showToast('Нет соединения с базой продуктов')});
+}
 
 /* CALENDAR */
 function shiftMonth(delta){calMonthCursor.setMonth(calMonthCursor.getMonth()+delta);renderCalendar()}
@@ -591,7 +713,7 @@ function saveGoal(){const g=parseFloat(document.getElementById('goalInput').valu
 /* INIT */
 document.getElementById('entryModalBg').querySelector('h3').innerHTML='Добавить в дневник <span id="entryModalTitleText"></span>';
 document.getElementById('pageEyebrow').textContent=greeting()+' · '+fmtHeaderDate(new Date());
-applyTheme(getThemeMode());renderDiary();
+applyTheme(getThemeMode());renderDiary();initModalGestures();
 </script>
 </body>
 </html>
